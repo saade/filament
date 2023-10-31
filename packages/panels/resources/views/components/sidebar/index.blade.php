@@ -7,35 +7,30 @@
     $isRtl = __('filament-panels::layout.direction') === 'rtl';
 @endphp
 
+{{-- format-ignore-start --}}
 <aside
     x-data="{}"
-    @if (filament()->isSidebarCollapsibleOnDesktop())
+    @if (filament()->isSidebarCollapsibleOnDesktop() && (! filament()->hasTopNavigation()))
         x-cloak
-        {{-- format-ignore-start --}}
         x-bind:class="
             $store.sidebar.isOpen
                 ? @js($openSidebarClasses . ' ' . 'lg:sticky')
                 : '-translate-x-full rtl:translate-x-full lg:sticky lg:translate-x-0 rtl:lg:-translate-x-0'
         "
-        {{-- format-ignore-end --}}
     @else
         @if (filament()->hasTopNavigation())
             x-cloak
             x-bind:class="$store.sidebar.isOpen ? @js($openSidebarClasses) : '-translate-x-full rtl:translate-x-full'"
         @elseif (filament()->isSidebarFullyCollapsibleOnDesktop())
             x-cloak
-            {{-- format-ignore-start --}}
             x-bind:class="$store.sidebar.isOpen ? @js($openSidebarClasses . ' ' . 'lg:sticky') : '-translate-x-full rtl:translate-x-full'"
-            {{-- format-ignore-end --}}
         @else
             x-cloak="-lg"
-            {{-- format-ignore-start --}}
             x-bind:class="
                 $store.sidebar.isOpen
                     ? @js($openSidebarClasses . ' ' . 'lg:sticky')
                     : 'w-[--sidebar-width] -translate-x-full rtl:translate-x-full lg:sticky'
             "
-            {{-- format-ignore-end --}}
         @endif
     @endif
     @class([
@@ -45,9 +40,8 @@
     ])
 >
     <header
-        class="fi-sidebar-header flex h-16 items-center bg-white px-6 ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10 lg:shadow-sm"
+        class="flex items-center h-16 px-6 bg-white fi-sidebar-header ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10 lg:shadow-sm"
     >
-        {{-- format-ignore-start --}}
         <div
             @if (filament()->isSidebarCollapsibleOnDesktop())
                 x-show="$store.sidebar.isOpen"
@@ -64,20 +58,19 @@
                 <x-filament-panels::logo />
             @endif
         </div>
-        {{-- format-ignore-end --}}
 
         @if (filament()->isSidebarCollapsibleOnDesktop())
             <x-filament::icon-button
                 color="gray"
                 :icon="$isRtl ? 'heroicon-o-chevron-left' : 'heroicon-o-chevron-right'"
-                icon-alias="panels::sidebar.expand-button"
+                {{-- @deprecated Use `panels::sidebar.expand-button.rtl` instead of `panels::sidebar.expand-button` for RTL. --}}
+                :icon-alias="$isRtl ? ['panels::sidebar.expand-button.rtl', 'panels::sidebar.expand-button'] : 'panels::sidebar.expand-button'"
                 icon-size="lg"
                 :label="__('filament-panels::layout.actions.sidebar.expand.label')"
                 x-cloak
                 x-data="{}"
                 x-on:click="$store.sidebar.open()"
                 x-show="! $store.sidebar.isOpen"
-                class="-mx-1.5"
             />
         @endif
 
@@ -85,20 +78,21 @@
             <x-filament::icon-button
                 color="gray"
                 :icon="$isRtl ? 'heroicon-o-chevron-right' : 'heroicon-o-chevron-left'"
-                icon-alias="panels::sidebar.collapse-button"
+                {{-- @deprecated Use `panels::sidebar.collapse-button.rtl` instead of `panels::sidebar.collapse-button` for RTL. --}}
+                :icon-alias="$isRtl ? ['panels::sidebar.collapse-button.rtl', 'panels::sidebar.collapse-button'] : 'panels::sidebar.collapse-button'"
                 icon-size="lg"
                 :label="__('filament-panels::layout.actions.sidebar.collapse.label')"
                 x-cloak
                 x-data="{}"
                 x-on:click="$store.sidebar.close()"
                 x-show="$store.sidebar.isOpen"
-                class="-mx-1.5 ms-auto hidden lg:flex"
+                class="hidden ms-auto lg:flex"
             />
         @endif
     </header>
 
     <nav
-        class="fi-sidebar-nav flex flex-col gap-y-7 overflow-y-auto overflow-x-hidden px-6 py-8"
+        class="flex flex-col px-6 py-8 overflow-x-hidden overflow-y-auto fi-sidebar-nav gap-y-7"
         style="scrollbar-gutter: stable"
     >
         {{ \Filament\Support\Facades\FilamentView::renderHook('panels::sidebar.nav.start') }}
@@ -117,7 +111,7 @@
         @endif
 
         @if (filament()->hasNavigation())
-            <ul class="-mx-2 flex flex-col gap-y-7">
+            <ul class="flex flex-col -mx-2 gap-y-1">
                 @foreach ($navigation as $group)
                     <x-filament-panels::sidebar.group
                         :active-icon="$group->getActiveIcon()"
@@ -132,13 +126,6 @@
                 @endforeach
             </ul>
 
-            @php
-                $collapsedNavigationGroupLabels = collect($navigation)
-                    ->filter(fn (\Filament\Navigation\NavigationGroup $group): bool => $group->isCollapsed())
-                    ->map(fn (\Filament\Navigation\NavigationGroup $group): string => $group->getLabel())
-                    ->values();
-            @endphp
-
             <script>
                 let collapsedGroups = JSON.parse(
                     localStorage.getItem('collapsedGroups'),
@@ -147,7 +134,12 @@
                 if (collapsedGroups === null || collapsedGroups === 'null') {
                     localStorage.setItem(
                         'collapsedGroups',
-                        JSON.stringify(@js($collapsedNavigationGroupLabels)),
+                        JSON.stringify(@js(
+                            collect($navigation)
+                                ->filter(fn (\Filament\Navigation\NavigationGroup $group): bool => $group->isCollapsed())
+                                ->map(fn (\Filament\Navigation\NavigationGroup $group): string => $group->getLabel())
+                                ->values()
+                        )),
                     )
                 }
 
@@ -181,3 +173,4 @@
 
     {{ \Filament\Support\Facades\FilamentView::renderHook('panels::sidebar.footer') }}
 </aside>
+{{-- format-ignore-end --}}
